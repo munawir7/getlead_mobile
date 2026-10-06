@@ -1,0 +1,15 @@
+{
+  "data": {
+    "token": "REDACTED",
+    "user": {
+      "id": "01KPJ4Y341NFSQ19ZWC51P3X9E",
+      "name": "KTX",
+      "email": "exhibition@ktx.global"
+    },
+    "device_name": "getlead_flutter",
+    "expires_at": "2026-12-04T09:04:04.000000Z",
+    "abilities": [
+      "mobile:*"
+    ]
+  }
+}
