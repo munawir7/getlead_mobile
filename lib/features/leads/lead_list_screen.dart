@@ -1,8 +1,10 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../auth/auth_controller.dart';
 import '../auth/login_screen.dart';
+import 'create_lead_screen.dart';
 import 'lead_detail_screen.dart';
 import 'lead_list_controller.dart';
 import 'lead_model.dart';
@@ -11,7 +13,8 @@ class LeadListScreen extends ConsumerStatefulWidget {
   const LeadListScreen({super.key});
 
   @override
-  ConsumerState<LeadListScreen> createState() => _LeadListScreenState();
+  ConsumerState<LeadListScreen> createState() =>
+      _LeadListScreenState();
 }
 
 class _LeadListScreenState extends ConsumerState<LeadListScreen> {
@@ -44,6 +47,22 @@ class _LeadListScreenState extends ConsumerState<LeadListScreen> {
       ref.read(leadListControllerProvider.notifier).loadMore();
     }
   }
+
+  // --------------------------------------------------
+  // ADD LEAD
+  // --------------------------------------------------
+
+  Future<void> _handleAddLead() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const CreateLeadScreen(),
+      ),
+    );
+  }
+
+  // --------------------------------------------------
+  // LOGOUT
+  // --------------------------------------------------
 
   Future<void> _handleLogout() async {
     final shouldLogout = await showDialog<bool>(
@@ -113,11 +132,15 @@ class _LeadListScreenState extends ConsumerState<LeadListScreen> {
       ),
     );
 
-    if (shouldLogout != true) return;
+    if (shouldLogout != true) {
+      return;
+    }
 
     await ref.read(authControllerProvider.notifier).logout();
 
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
@@ -127,6 +150,7 @@ class _LeadListScreenState extends ConsumerState<LeadListScreen> {
     );
 
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Row(
@@ -152,7 +176,10 @@ class _LeadListScreenState extends ConsumerState<LeadListScreen> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
-        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        margin: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 16,
+        ),
         duration: const Duration(seconds: 3),
       ),
     );
@@ -169,27 +196,33 @@ class _LeadListScreenState extends ConsumerState<LeadListScreen> {
     if (status?.color != null && status!.color!.isNotEmpty) {
       try {
         final hex = status.color!.replaceAll('#', '');
+
         if (hex.length == 6) {
           return Color(int.parse('0xFF$hex'));
-        } else if (hex.length == 8) {
+        }
+
+        if (hex.length == 8) {
           return Color(int.parse('0x$hex'));
         }
       } catch (_) {}
     }
 
     final name = (status?.name ?? '').toLowerCase();
+
     if (name.contains('got business') ||
         name.contains('won') ||
         name.contains('converted') ||
         name.contains('closed')) {
       return const Color(0xFF15803D);
     }
+
     if (name.contains('attempted') ||
         name.contains('contact') ||
         name.contains('follow') ||
         name.contains('pending')) {
       return const Color(0xFFC25E00);
     }
+
     if (name.contains('not responding') ||
         name.contains('lost') ||
         name.contains('junk') ||
@@ -202,8 +235,13 @@ class _LeadListScreenState extends ConsumerState<LeadListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final leadsAsync = ref.watch(leadListControllerProvider);
-    final controller = ref.watch(leadListControllerProvider.notifier);
+    final leadsAsync = ref.watch(
+      leadListControllerProvider,
+    );
+
+    final controller = ref.watch(
+      leadListControllerProvider.notifier,
+    );
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -212,23 +250,59 @@ class _LeadListScreenState extends ConsumerState<LeadListScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // --------------------------------------------------
-            // HEADER: "Leads" + "Log out"
+            // HEADER
             // --------------------------------------------------
+
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 14),
+              padding: const EdgeInsets.fromLTRB(
+                20,
+                16,
+                20,
+                14,
+              ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const Text(
-                    'Leads',
-                    style: TextStyle(
-                      color: darkText,
-                      fontSize: 32,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.8,
+                  const Expanded(
+                    child: Text(
+                      'Leads',
+                      style: TextStyle(
+                        color: darkText,
+                        fontSize: 32,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.8,
+                      ),
                     ),
                   ),
+
+                  // --------------------------------------------------
+                  // ADD BUTTON
+                  // --------------------------------------------------
+
+                  GestureDetector(
+                    onTap: _handleAddLead,
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: cardBackground,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.add_rounded,
+                        color: Colors.white,
+                        size: 25,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  // --------------------------------------------------
+                  // LOGOUT
+                  // --------------------------------------------------
+
                   GestureDetector(
                     onTap: _handleLogout,
                     behavior: HitTestBehavior.opaque,
@@ -252,19 +326,28 @@ class _LeadListScreenState extends ConsumerState<LeadListScreen> {
             ),
 
             // --------------------------------------------------
-            // TOTAL LEADS HERO CARD
+            // TOTAL LEADS CARD
             // --------------------------------------------------
+
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20,
+              ),
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(22, 20, 22, 22),
+                padding: const EdgeInsets.fromLTRB(
+                  22,
+                  20,
+                  22,
+                  22,
+                ),
                 decoration: BoxDecoration(
                   color: cardBackground,
                   borderRadius: BorderRadius.circular(24),
                 ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
@@ -290,9 +373,12 @@ class _LeadListScreenState extends ConsumerState<LeadListScreen> {
                     ),
                     const SizedBox(height: 14),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
+                      mainAxisAlignment:
+                          MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment:
+                          CrossAxisAlignment.baseline,
+                      textBaseline:
+                          TextBaseline.alphabetic,
                       children: [
                         Text(
                           _formatCount(
@@ -327,6 +413,7 @@ class _LeadListScreenState extends ConsumerState<LeadListScreen> {
             // --------------------------------------------------
             // LEADS LIST
             // --------------------------------------------------
+
             Expanded(
               child: leadsAsync.when(
                 data: (leads) {
@@ -335,10 +422,14 @@ class _LeadListScreenState extends ConsumerState<LeadListScreen> {
                       color: redDotColor,
                       backgroundColor: Colors.white,
                       onRefresh: () => ref
-                          .read(leadListControllerProvider.notifier)
+                          .read(
+                            leadListControllerProvider
+                                .notifier,
+                          )
                           .refreshLeads(),
                       child: ListView(
-                        physics: const AlwaysScrollableScrollPhysics(),
+                        physics:
+                            const AlwaysScrollableScrollPhysics(),
                         children: const [
                           SizedBox(height: 100),
                           Center(
@@ -359,11 +450,15 @@ class _LeadListScreenState extends ConsumerState<LeadListScreen> {
                     color: redDotColor,
                     backgroundColor: Colors.white,
                     onRefresh: () => ref
-                        .read(leadListControllerProvider.notifier)
+                        .read(
+                          leadListControllerProvider
+                              .notifier,
+                        )
                         .refreshLeads(),
                     child: ListView.separated(
                       controller: _scrollController,
-                      physics: const AlwaysScrollableScrollPhysics(),
+                      physics:
+                          const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.only(
                         left: 20,
                         right: 20,
@@ -371,12 +466,17 @@ class _LeadListScreenState extends ConsumerState<LeadListScreen> {
                         bottom: 24,
                       ),
                       itemCount: leads.length +
-                          (controller.isLoadingMore ? 1 : 0),
-                      separatorBuilder: (context, index) {
-                        if (index >= leads.length - 1 &&
+                          (controller.isLoadingMore
+                              ? 1
+                              : 0),
+                      separatorBuilder:
+                          (context, index) {
+                        if (index >=
+                                leads.length - 1 &&
                             controller.isLoadingMore) {
                           return const SizedBox.shrink();
                         }
+
                         return const Divider(
                           height: 1,
                           thickness: 1,
@@ -384,22 +484,27 @@ class _LeadListScreenState extends ConsumerState<LeadListScreen> {
                           indent: 60,
                         );
                       },
-                      itemBuilder: (context, index) {
+                      itemBuilder:
+                          (context, index) {
                         if (index == leads.length) {
                           return Padding(
-                            padding: const EdgeInsets.symmetric(
+                            padding:
+                                const EdgeInsets.symmetric(
                               vertical: 24,
                             ),
                             child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisAlignment:
+                                  MainAxisAlignment.center,
                               children: [
-                                SizedBox(
+                                const SizedBox(
                                   width: 18,
                                   height: 18,
-                                  child: CircularProgressIndicator(
+                                  child:
+                                      CircularProgressIndicator(
                                     strokeWidth: 2.2,
                                     valueColor:
-                                        AlwaysStoppedAnimation<Color>(
+                                        AlwaysStoppedAnimation<
+                                            Color>(
                                       mutedText,
                                     ),
                                   ),
@@ -408,9 +513,11 @@ class _LeadListScreenState extends ConsumerState<LeadListScreen> {
                                 const Text(
                                   'Loading more leads',
                                   style: TextStyle(
-                                    color: secondaryText,
+                                    color:
+                                        secondaryText,
                                     fontSize: 14,
-                                    fontWeight: FontWeight.w500,
+                                    fontWeight:
+                                        FontWeight.w500,
                                   ),
                                 ),
                               ],
@@ -419,63 +526,101 @@ class _LeadListScreenState extends ConsumerState<LeadListScreen> {
                         }
 
                         final lead = leads[index];
-                        final statusColor = _getStatusColor(lead.status);
-                        final statusLabel = lead.status?.name.isNotEmpty == true
-                            ? lead.status!.name
-                            : 'Qualified';
-                        final sourceLabel = lead.source?.name.isNotEmpty == true
-                            ? lead.source!.name
-                            : (lead.purposes.isNotEmpty
-                                ? lead.purposes.first
-                                : 'Website');
-                        final timeLabel = lead.timeAgo.isNotEmpty
-                            ? lead.timeAgo
-                            : (index < 5
-                                ? ['12m', '1h', '3h', '1d', '2d'][index]
-                                : '');
+
+                        final statusColor =
+                            _getStatusColor(
+                          lead.status,
+                        );
+
+                        final statusLabel =
+                            lead.status?.name
+                                        .isNotEmpty ==
+                                    true
+                                ? lead.status!.name
+                                : 'Qualified';
+
+                        final sourceLabel =
+                            lead.source?.name
+                                        .isNotEmpty ==
+                                    true
+                                ? lead.source!.name
+                                : (lead.purposes
+                                        .isNotEmpty
+                                    ? lead.purposes.first
+                                    : 'Website');
+
+                        final timeLabel =
+                            lead.timeAgo.isNotEmpty
+                                ? lead.timeAgo
+                                : (index < 5
+                                    ? [
+                                        '12m',
+                                        '1h',
+                                        '3h',
+                                        '1d',
+                                        '2d',
+                                      ][index]
+                                    : '');
 
                         return InkWell(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius:
+                              BorderRadius.circular(12),
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (_) => LeadDetailScreen(
+                                builder: (_) =>
+                                    LeadDetailScreen(
                                   leadId: lead.id,
-                                  initialLead: lead,
                                 ),
                               ),
                             );
                           },
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(
+                            padding:
+                                const EdgeInsets.symmetric(
                               vertical: 14,
                             ),
                             child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.center,
                               children: [
-                                // Avatar circle with 2-letter initials
+                                // ------------------------------------------------
+                                // AVATAR
+                                // ------------------------------------------------
+
                                 Container(
                                   width: 46,
                                   height: 46,
-                                  decoration: const BoxDecoration(
-                                    color: avatarBackground,
-                                    shape: BoxShape.circle,
+                                  decoration:
+                                      const BoxDecoration(
+                                    color:
+                                        avatarBackground,
+                                    shape:
+                                        BoxShape.circle,
                                   ),
-                                  alignment: Alignment.center,
+                                  alignment:
+                                      Alignment.center,
                                   child: Text(
                                     lead.initials,
-                                    style: const TextStyle(
+                                    style:
+                                        const TextStyle(
                                       color: darkText,
                                       fontSize: 14,
-                                      fontWeight: FontWeight.w700,
+                                      fontWeight:
+                                          FontWeight.w700,
                                       letterSpacing: -0.2,
                                     ),
                                   ),
                                 ),
 
-                                const SizedBox(width: 14),
+                                const SizedBox(
+                                  width: 14,
+                                ),
 
-                                // Name & Source
+                                // ------------------------------------------------
+                                // NAME + SOURCE
+                                // ------------------------------------------------
+
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment:
@@ -484,53 +629,79 @@ class _LeadListScreenState extends ConsumerState<LeadListScreen> {
                                       Text(
                                         lead.name,
                                         maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
+                                        overflow:
+                                            TextOverflow
+                                                .ellipsis,
+                                        style:
+                                            const TextStyle(
                                           fontSize: 16,
-                                          fontWeight: FontWeight.w700,
+                                          fontWeight:
+                                              FontWeight.w700,
                                           color: darkText,
-                                          letterSpacing: -0.3,
+                                          letterSpacing:
+                                              -0.3,
                                         ),
                                       ),
-                                      const SizedBox(height: 3),
+                                      const SizedBox(
+                                        height: 3,
+                                      ),
                                       Text(
                                         sourceLabel,
                                         maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
+                                        overflow:
+                                            TextOverflow
+                                                .ellipsis,
+                                        style:
+                                            const TextStyle(
                                           fontSize: 14,
-                                          fontWeight: FontWeight.w400,
-                                          color: secondaryText,
+                                          fontWeight:
+                                              FontWeight.w400,
+                                          color:
+                                              secondaryText,
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
 
-                                const SizedBox(width: 12),
+                                const SizedBox(
+                                  width: 12,
+                                ),
 
-                                // Time & Status
+                                // ------------------------------------------------
+                                // TIME + STATUS
+                                // ------------------------------------------------
+
                                 Column(
                                   crossAxisAlignment:
                                       CrossAxisAlignment.end,
                                   children: [
-                                    if (timeLabel.isNotEmpty)
+                                    if (timeLabel
+                                        .isNotEmpty)
                                       Text(
                                         timeLabel,
-                                        style: const TextStyle(
+                                        style:
+                                            const TextStyle(
                                           fontSize: 13,
-                                          fontWeight: FontWeight.w400,
-                                          color: mutedText,
+                                          fontWeight:
+                                              FontWeight.w400,
+                                          color:
+                                              mutedText,
                                         ),
                                       ),
-                                    const SizedBox(height: 4),
+                                    const SizedBox(
+                                      height: 4,
+                                    ),
                                     Text(
                                       statusLabel,
                                       style: TextStyle(
                                         fontSize: 14,
-                                        fontWeight: FontWeight.w700,
-                                        color: statusColor,
-                                        letterSpacing: -0.2,
+                                        fontWeight:
+                                            FontWeight.w700,
+                                        color:
+                                            statusColor,
+                                        letterSpacing:
+                                            -0.2,
                                       ),
                                     ),
                                   ],
@@ -543,51 +714,92 @@ class _LeadListScreenState extends ConsumerState<LeadListScreen> {
                     ),
                   );
                 },
+
+                // ------------------------------------------------
+                // LOADING
+                // ------------------------------------------------
+
                 loading: () => const Center(
-                  child: CircularProgressIndicator(
+                  child:
+                      CircularProgressIndicator(
                     strokeWidth: 2.5,
-                    valueColor: AlwaysStoppedAnimation<Color>(redDotColor),
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(
+                      redDotColor,
+                    ),
                   ),
                 ),
-                error: (error, stackTrace) => Center(
+
+                // ------------------------------------------------
+                // ERROR
+                // ------------------------------------------------
+
+                error: (error, stackTrace) =>
+                    Center(
                   child: Padding(
-                    padding: const EdgeInsets.all(24),
+                    padding:
+                        const EdgeInsets.all(24),
                     child: Column(
-                      mainAxisSize: MainAxisSize.min,
+                      mainAxisSize:
+                          MainAxisSize.min,
                       children: [
                         const Icon(
-                          Icons.error_outline_rounded,
+                          Icons
+                              .error_outline_rounded,
                           size: 48,
                           color: redDotColor,
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(
+                          height: 16,
+                        ),
                         const Text(
                           'Failed to load leads',
                           style: TextStyle(
                             fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                            fontWeight:
+                                FontWeight.bold,
                             color: darkText,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(
+                          height: 8,
+                        ),
                         Text(
                           error.toString(),
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(color: secondaryText),
+                          textAlign:
+                              TextAlign.center,
+                          style:
+                              const TextStyle(
+                            color: secondaryText,
+                          ),
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(
+                          height: 20,
+                        ),
                         ElevatedButton(
                           onPressed: () => ref
-                              .read(leadListControllerProvider.notifier)
+                              .read(
+                                leadListControllerProvider
+                                    .notifier,
+                              )
                               .refreshLeads(),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: cardBackground,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                          style:
+                              ElevatedButton.styleFrom(
+                            backgroundColor:
+                                cardBackground,
+                            foregroundColor:
+                                Colors.white,
+                            shape:
+                                RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(
+                                12,
+                              ),
                             ),
                           ),
-                          child: const Text('Try Again'),
+                          child: const Text(
+                            'Try Again',
+                          ),
                         ),
                       ],
                     ),

@@ -65,7 +65,17 @@ class ApiClient {
       queryParameters: queryParameters,
     );
   }
-
+Future<Response<dynamic>> put(
+  String path, {
+  dynamic data,
+  Map<String, dynamic>? queryParameters,
+}) {
+  return _dio.put(
+    path,
+    data: data,
+    queryParameters: queryParameters,
+  );
+}
   Future<Response<dynamic>> delete(
     String path, {
     dynamic data,
