@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:getlead_mobile/features/home/homescreen.dart';
 
-import '../leads/lead_list_screen.dart';
 import 'auth_controller.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -54,7 +54,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (authState.isLoggedIn) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (_) => const LeadListScreen(),
+          builder: (_) => const HomeScreen(),
         ),
       );
     }
@@ -64,7 +64,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
 
-    // Optional: listen and trigger a floating SnackBar on error
+    // Listen for authentication errors.
     ref.listen(authControllerProvider, (previous, next) {
       if (next.errorMessage != null &&
           next.errorMessage!.isNotEmpty &&
@@ -73,12 +73,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.error_outline, color: Colors.white, size: 20),
+                const Icon(
+                  Icons.error_outline,
+                  color: Colors.white,
+                  size: 20,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     next.errorMessage!,
-                    style: const TextStyle(fontWeight: FontWeight.w500),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ],
@@ -114,9 +120,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       children: [
                         const SizedBox(height: 44),
 
-                        // --------------------------------------------------
                         // LOGO + GETLEAD
-                        // --------------------------------------------------
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
@@ -186,9 +190,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                         const SizedBox(height: 62),
 
-                        // --------------------------------------------------
                         // MAIN HEADING
-                        // --------------------------------------------------
                         const Text(
                           'Your leads\nare waiting.',
                           style: TextStyle(
@@ -213,9 +215,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                         const SizedBox(height: 48),
 
-                        // --------------------------------------------------
-                        // EMAIL / PHONE
-                        // --------------------------------------------------
+                        // EMAIL / PHONE LABEL
                         const Text(
                           'Email or phone',
                           style: TextStyle(
@@ -227,7 +227,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                         const SizedBox(height: 8),
 
-                        // Removed rigid SizedBox(height: 58) to prevent RenderFlex overflow
+                        // EMAIL / PHONE FIELD
                         TextFormField(
                           controller: _identifierController,
                           enabled: !authState.isLoading,
@@ -295,9 +295,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                         const SizedBox(height: 24),
 
-                        // --------------------------------------------------
-                        // PASSWORD
-                        // --------------------------------------------------
+                        // PASSWORD LABEL
                         const Text(
                           'Password',
                           style: TextStyle(
@@ -309,7 +307,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                         const SizedBox(height: 8),
 
-                        // Removed rigid SizedBox(height: 58) to prevent RenderFlex overflow
+                        // PASSWORD FIELD
                         TextFormField(
                           controller: _passwordController,
                           enabled: !authState.isLoading,
@@ -344,7 +342,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   ? null
                                   : () {
                                       setState(() {
-                                        _obscurePassword = !_obscurePassword;
+                                        _obscurePassword =
+                                            !_obscurePassword;
                                       });
                                     },
                               style: TextButton.styleFrom(
@@ -405,9 +404,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           },
                         ),
 
-                        // --------------------------------------------------
-                        // CONVERTED API ERROR (Styled Alert Banner)
-                        // --------------------------------------------------
+                        // AUTHENTICATION ERROR BANNER
                         if (authState.errorMessage != null &&
                             authState.errorMessage!.isNotEmpty) ...[
                           const SizedBox(height: 16),
@@ -450,9 +447,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                         const SizedBox(height: 30),
 
-                        // --------------------------------------------------
                         // SIGN IN BUTTON
-                        // --------------------------------------------------
                         SizedBox(
                           width: double.infinity,
                           height: 62,
@@ -493,9 +488,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                         const SizedBox(height: 32),
 
-                        // --------------------------------------------------
                         // FOOTER
-                        // --------------------------------------------------
                         const Center(
                           child: Text(
                             'Stays signed in on this device',

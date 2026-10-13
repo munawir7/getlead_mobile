@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:getlead_mobile/features/auth/auth_controller.dart';
 
@@ -24,7 +25,6 @@ class LeadsPage {
   final int? total;
 }
 
-/// Data returned by the /meta endpoint.
 class LeadMeta {
   const LeadMeta({
     required this.sources,
@@ -43,12 +43,36 @@ class LeadsRepository {
   final ApiClient _apiClient;
 
   // ============================================================
+  // DEBUG HELPER
+  // ============================================================
+
+  void _logRequest(String label, String endpoint) {
+    if (!kDebugMode) return;
+
+    debugPrint('========== $label ==========');
+    debugPrint('Business ID: ${AppConstants.businessId}');
+    debugPrint('Endpoint: $endpoint');
+  }
+
+  void _logError(String label, Object error) {
+    if (!kDebugMode) return;
+
+    debugPrint('========== $label ERROR ==========');
+    debugPrint(error.toString());
+    debugPrint('==================================');
+  }
+
+  // ============================================================
   // GET LEADS
   // ============================================================
 
   Future<LeadsPage> getLeads({
     String? cursor,
   }) async {
+    final endpoint = ApiEndpoints.leads(
+      AppConstants.businessId,
+    );
+
     final queryParameters = <String, dynamic>{
       'per_page': AppConstants.pageSize,
     };
@@ -57,73 +81,77 @@ class LeadsRepository {
       queryParameters['cursor'] = cursor;
     }
 
-    final response = await _apiClient.get(
-      ApiEndpoints.leads(
-        AppConstants.businessId,
-      ),
-      queryParameters: queryParameters,
-    );
+    _logRequest('GET LEADS', endpoint);
 
-    final responseData = response.data;
-
-    if (responseData is! Map<String, dynamic>) {
-      throw Exception(
-        'Invalid leads response.',
+    try {
+      final response = await _apiClient.get(
+        endpoint,
+        queryParameters: queryParameters,
       );
-    }
 
-    final data = responseData['data'];
+      if (kDebugMode) {
+        debugPrint('GET LEADS STATUS: ${response.statusCode}');
+        debugPrint('GET LEADS RESPONSE: ${response.data}');
+      }
 
-    if (data is! List) {
-      throw Exception(
-        'Invalid leads data.',
-      );
-    }
+      final responseData = response.data;
 
-    final leads = data
-        .whereType<Map<String, dynamic>>()
-        .map(LeadModel.fromJson)
-        .toList();
+      if (responseData is! Map<String, dynamic>) {
+        throw Exception('Invalid leads response.');
+      }
 
-    String? nextCursor;
-    int? total;
+      final data = responseData['data'];
 
-    final meta = responseData['meta'];
+      if (data is! List) {
+        throw Exception('Invalid leads data.');
+      }
 
-    if (meta is Map<String, dynamic>) {
-      final cursorValue = meta['next_cursor'];
+      final leads = data
+          .whereType<Map<String, dynamic>>()
+          .map(LeadModel.fromJson)
+          .toList();
 
-      if (cursorValue != null) {
-        final value = cursorValue.toString().trim();
+      String? nextCursor;
+      int? total;
 
-        if (value.isNotEmpty) {
-          nextCursor = value;
+      final meta = responseData['meta'];
+
+      if (meta is Map<String, dynamic>) {
+        final cursorValue = meta['next_cursor'];
+
+        if (cursorValue != null) {
+          final value = cursorValue.toString().trim();
+
+          if (value.isNotEmpty) {
+            nextCursor = value;
+          }
+        }
+
+        final totalValue =
+            meta['total'] ??
+            meta['total_leads'] ??
+            meta['count'];
+
+        if (totalValue != null) {
+          total = int.tryParse(totalValue.toString());
         }
       }
 
-      final totalValue =
-          meta['total'] ??
-          meta['total_leads'] ??
-          meta['count'];
-
-      if (totalValue != null) {
+      if (total == null && responseData['total'] != null) {
         total = int.tryParse(
-          totalValue.toString(),
+          responseData['total'].toString(),
         );
       }
-    }
 
-    if (total == null && responseData['total'] != null) {
-      total = int.tryParse(
-        responseData['total'].toString(),
+      return LeadsPage(
+        leads: leads,
+        nextCursor: nextCursor,
+        total: total,
       );
+    } catch (error) {
+      _logError('GET LEADS', error);
+      rethrow;
     }
-
-    return LeadsPage(
-      leads: leads,
-      nextCursor: nextCursor,
-      total: total,
-    );
   }
 
   // ============================================================
@@ -131,106 +159,111 @@ class LeadsRepository {
   // ============================================================
 
   Future<LeadModel> getLeadDetail(String leadId) async {
-    final response = await _apiClient.get(
-      ApiEndpoints.leadDetail(
-        AppConstants.businessId,
-        leadId,
-      ),
+    final endpoint = ApiEndpoints.leadDetail(
+      AppConstants.businessId,
+      leadId,
     );
 
-    final responseData = response.data;
+    _logRequest('GET LEAD DETAIL', endpoint);
 
-    if (responseData is Map<String, dynamic>) {
-      // Most mobile API responses return:
-      //
-      // {
-      //   "data": {
-      //      ...
-      //   }
-      // }
+    try {
+      final response = await _apiClient.get(endpoint);
 
-      final data = responseData['data'];
-
-      if (data is Map<String, dynamic>) {
-        return LeadModel.fromJson(data);
+      if (kDebugMode) {
+        debugPrint('LEAD DETAIL STATUS: ${response.statusCode}');
+        debugPrint('LEAD DETAIL RESPONSE: ${response.data}');
       }
 
-      // Also support a direct lead object response.
-      if (responseData['id'] != null) {
-        return LeadModel.fromJson(responseData);
+      final responseData = response.data;
+
+      if (responseData is Map<String, dynamic>) {
+        final data = responseData['data'];
+
+        if (data is Map<String, dynamic>) {
+          return LeadModel.fromJson(data);
+        }
+
+        if (responseData['id'] != null) {
+          return LeadModel.fromJson(responseData);
+        }
       }
+
+      throw Exception('Invalid lead detail response from server.');
+    } catch (error) {
+      _logError('GET LEAD DETAIL', error);
+      rethrow;
     }
-
-    throw Exception(
-      'Invalid lead detail response from server.',
-    );
   }
 
   // ============================================================
-  // GET META
+  // GET LEAD METADATA
   // ============================================================
 
   Future<LeadMeta> getLeadMeta() async {
-    final response = await _apiClient.get(
-      ApiEndpoints.leadMeta(
-        AppConstants.businessId,
-      ),
+    final endpoint = ApiEndpoints.leadMeta(
+      AppConstants.businessId,
     );
 
-    final responseData = response.data;
+    _logRequest('GET LEAD METADATA', endpoint);
 
-    if (responseData is! Map<String, dynamic>) {
-      throw Exception(
-        'Invalid lead meta response.',
+    try {
+      final response = await _apiClient.get(endpoint);
+
+      if (kDebugMode) {
+        debugPrint('LEAD META STATUS: ${response.statusCode}');
+        debugPrint('LEAD META RESPONSE: ${response.data}');
+      }
+
+      final responseData = response.data;
+
+      if (responseData is! Map<String, dynamic>) {
+        throw Exception('Invalid lead metadata response.');
+      }
+
+      final rawData = responseData['data'];
+
+      final Map<String, dynamic> metaData;
+
+      if (rawData is Map<String, dynamic>) {
+        metaData = rawData;
+      } else {
+        metaData = responseData;
+      }
+
+      final sources = <LeadSource>[];
+      final rawSources = metaData['sources'];
+
+      if (rawSources is List) {
+        for (final item in rawSources) {
+          if (item is Map<String, dynamic>) {
+            sources.add(LeadSource.fromJson(item));
+          }
+        }
+      }
+
+      final statuses = <LeadStatus>[];
+      final rawStatuses = metaData['statuses'];
+
+      if (rawStatuses is List) {
+        for (final item in rawStatuses) {
+          if (item is Map<String, dynamic>) {
+            statuses.add(LeadStatus.fromJson(item));
+          }
+        }
+      }
+
+      return LeadMeta(
+        sources: sources,
+        statuses: statuses,
       );
+    } catch (error) {
+      _logError('GET LEAD METADATA', error);
+      rethrow;
     }
-
-    final rawData = responseData['data'];
-
-    final Map<String, dynamic> metaData;
-
-    if (rawData is Map<String, dynamic>) {
-      metaData = rawData;
-    } else {
-      metaData = responseData;
-    }
-
-    final sources = <LeadSource>[];
-
-    final rawSources = metaData['sources'];
-
-    if (rawSources is List) {
-      for (final item in rawSources) {
-        if (item is Map<String, dynamic>) {
-          sources.add(
-            LeadSource.fromJson(item),
-          );
-        }
-      }
-    }
-
-    final statuses = <LeadStatus>[];
-
-    final rawStatuses = metaData['statuses'];
-
-    if (rawStatuses is List) {
-      for (final item in rawStatuses) {
-        if (item is Map<String, dynamic>) {
-          statuses.add(
-            LeadStatus.fromJson(item),
-          );
-        }
-      }
-    }
-
-    return LeadMeta(
-      sources: sources,
-      statuses: statuses,
-    );
   }
 
   // ============================================================
-  // CREATE LEAD - POST
+  // CREATE LEAD
   // ============================================================
 
   Future<LeadModel> createLead({
@@ -244,9 +277,7 @@ class LeadsRepository {
     final data = <String, dynamic>{
       'name': name.trim(),
       'phone_numbers': [
-        {
-          'phone_number': phoneNumber.trim(),
-        },
+        {'phone_number': phoneNumber.trim()},
       ],
       'source_id': sourceId,
     };
@@ -263,41 +294,46 @@ class LeadsRepository {
       data['notes'] = notes.trim();
     }
 
-    final response = await _apiClient.post(
-      ApiEndpoints.leads(
-        AppConstants.businessId,
-      ),
-      data: data,
+    final endpoint = ApiEndpoints.leads(
+      AppConstants.businessId,
     );
 
-    final responseData = response.data;
+    _logRequest('CREATE LEAD', endpoint);
 
-    if (responseData is! Map<String, dynamic>) {
-      throw Exception(
-        'Invalid create lead response.',
+    try {
+      final response = await _apiClient.post(
+        endpoint,
+        data: data,
       );
+
+      if (kDebugMode) {
+        debugPrint('CREATE LEAD STATUS: ${response.statusCode}');
+        debugPrint('CREATE LEAD RESPONSE: ${response.data}');
+      }
+
+      final responseData = response.data;
+
+      if (responseData is! Map<String, dynamic>) {
+        throw Exception('Invalid create lead response.');
+      }
+
+      final responseLead = responseData['data'];
+
+      if (responseLead is Map<String, dynamic>) {
+        return LeadModel.fromJson(responseLead);
+      }
+
+      final leadId = responseData['id'];
+
+      if (leadId != null && leadId.toString().trim().isNotEmpty) {
+        return getLeadDetail(leadId.toString());
+      }
+
+      throw Exception('Created lead ID was not returned by the server.');
+    } catch (error) {
+      _logError('CREATE LEAD', error);
+      rethrow;
     }
-
-    final responseLead = responseData['data'];
-
-    if (responseLead is Map<String, dynamic>) {
-      return LeadModel.fromJson(
-        responseLead,
-      );
-    }
-
-    final leadId = responseData['id'];
-
-    if (leadId != null &&
-        leadId.toString().trim().isNotEmpty) {
-      return getLeadDetail(
-        leadId.toString(),
-      );
-    }
-
-    throw Exception(
-      'Created lead ID was not returned by the server.',
-    );
   }
 
   // ============================================================
@@ -317,95 +353,55 @@ class LeadsRepository {
       'name': name.trim(),
       'source_id': sourceId,
       'phone_numbers': [
-        {
-          'phone_number': phoneNumber.trim(),
-        },
+        {'phone_number': phoneNumber.trim()},
       ],
+      'email': email?.trim().isNotEmpty == true
+          ? email!.trim()
+          : null,
+      'status_id': statusId?.trim().isNotEmpty == true
+          ? statusId!.trim()
+          : null,
+      'notes': notes?.trim().isNotEmpty == true
+          ? notes!.trim()
+          : null,
     };
 
-    if (email != null && email.trim().isNotEmpty) {
-      data['email'] = email.trim();
-    } else {
-      data['email'] = null;
-    }
-
-    if (statusId != null && statusId.trim().isNotEmpty) {
-      data['status_id'] = statusId.trim();
-    } else {
-      data['status_id'] = null;
-    }
-
-    if (notes != null && notes.trim().isNotEmpty) {
-      data['notes'] = notes.trim();
-    } else {
-      data['notes'] = null;
-    }
-
-    // ------------------------------------------------------------
-    // DEBUG REQUEST
-    // ------------------------------------------------------------
-
-    assert(() {
-      // ignore: avoid_print
-      print('================================');
-      // ignore: avoid_print
-      print('PUT EDIT LEAD');
-      // ignore: avoid_print
-      print('Lead ID: $leadId');
-      // ignore: avoid_print
-      print('Request body: $data');
-      // ignore: avoid_print
-      print('================================');
-
-      return true;
-    }());
-
-    final response = await _apiClient.put(
-      ApiEndpoints.updateLead(
-        AppConstants.businessId,
-        leadId,
-      ),
-      data: data,
+    final endpoint = ApiEndpoints.updateLead(
+      AppConstants.businessId,
+      leadId,
     );
 
-    // ------------------------------------------------------------
-    // DEBUG RESPONSE
-    // ------------------------------------------------------------
+    _logRequest('EDIT LEAD', endpoint);
 
-    assert(() {
-      // ignore: avoid_print
-      print('================================');
-      // ignore: avoid_print
-      print('PUT STATUS: ${response.statusCode}');
-      // ignore: avoid_print
-      print('PUT RESPONSE: ${response.data}');
-      // ignore: avoid_print
-      print('================================');
-
-      return true;
-    }());
-
-    // ------------------------------------------------------------
-    // IMPORTANT
-    //
-    // Do not use the PUT response as the final LeadModel.
-    // The PUT response may not contain the complete lead data.
-    //
-    // After a successful PUT, fetch the complete lead again.
-    // ------------------------------------------------------------
-
-    if (response.statusCode == 200 ||
-        response.statusCode == 201) {
-      return getLeadDetail(leadId);
+    if (kDebugMode) {
+      debugPrint('EDIT LEAD BODY: $data');
     }
 
-    throw Exception(
-      'Failed to update lead.',
-    );
+    try {
+      final response = await _apiClient.put(
+        endpoint,
+        data: data,
+      );
+
+      if (kDebugMode) {
+        debugPrint('EDIT LEAD STATUS: ${response.statusCode}');
+        debugPrint('EDIT LEAD RESPONSE: ${response.data}');
+      }
+
+      if (response.statusCode == 200 ||
+          response.statusCode == 201) {
+        return getLeadDetail(leadId);
+      }
+
+      throw Exception('Failed to update lead.');
+    } catch (error) {
+      _logError('EDIT LEAD', error);
+      rethrow;
+    }
   }
 
   // ============================================================
-  // PATCH LEAD - UPDATE ONE OR MORE FIELDS
+  // PATCH LEAD
   // ============================================================
 
   Future<LeadModel> patchLead({
@@ -416,107 +412,131 @@ class LeadsRepository {
       return getLeadDetail(leadId);
     }
 
-    final response = await _apiClient.patch(
-      ApiEndpoints.patchLead(
-        AppConstants.businessId,
-        leadId,
-      ),
-      data: changes,
+    final endpoint = ApiEndpoints.patchLead(
+      AppConstants.businessId,
+      leadId,
     );
 
-    final responseData = response.data;
+    _logRequest('PATCH LEAD', endpoint);
 
-    if (responseData is Map<String, dynamic>) {
-      final dataValue = responseData['data'];
+    try {
+      final response = await _apiClient.patch(
+        endpoint,
+        data: changes,
+      );
 
-      if (dataValue is Map<String, dynamic>) {
-        return LeadModel.fromJson(
-          dataValue,
-        );
+      if (kDebugMode) {
+        debugPrint('PATCH LEAD STATUS: ${response.statusCode}');
+        debugPrint('PATCH LEAD RESPONSE: ${response.data}');
       }
 
-      if (responseData['id'] != null) {
-        return LeadModel.fromJson(
-          responseData,
-        );
+      final responseData = response.data;
+
+      if (responseData is Map<String, dynamic>) {
+        final dataValue = responseData['data'];
+
+        if (dataValue is Map<String, dynamic>) {
+          return LeadModel.fromJson(dataValue);
+        }
+
+        if (responseData['id'] != null) {
+          return LeadModel.fromJson(responseData);
+        }
       }
+
+      return getLeadDetail(leadId);
+    } catch (error) {
+      _logError('PATCH LEAD', error);
+      rethrow;
     }
-
-    return getLeadDetail(leadId);
   }
 
   // ============================================================
-  // UPDATE STATUS - PATCH
+  // UPDATE LEAD STATUS
   // ============================================================
 
   Future<LeadModel> updateLeadStatus({
     required String leadId,
     required String statusId,
   }) async {
-    final response = await _apiClient.patch(
-      ApiEndpoints.updateLeadStatus(
-        AppConstants.businessId,
-        leadId,
-      ),
-      data: {
-        'status_id': statusId,
-      },
+    final endpoint = ApiEndpoints.updateLeadStatus(
+      AppConstants.businessId,
+      leadId,
     );
 
-    final responseData = response.data;
+    _logRequest('UPDATE LEAD STATUS', endpoint);
 
-    if (responseData is Map<String, dynamic>) {
-      final dataValue = responseData['data'];
+    try {
+      final response = await _apiClient.patch(
+        endpoint,
+        data: {'status_id': statusId},
+      );
 
-      if (dataValue is Map<String, dynamic>) {
-        return LeadModel.fromJson(
-          dataValue,
-        );
+      if (kDebugMode) {
+        debugPrint('UPDATE STATUS RESPONSE: ${response.data}');
       }
 
-      if (responseData['id'] != null) {
-        return LeadModel.fromJson(
-          responseData,
-        );
+      final responseData = response.data;
+
+      if (responseData is Map<String, dynamic>) {
+        final dataValue = responseData['data'];
+
+        if (dataValue is Map<String, dynamic>) {
+          return LeadModel.fromJson(dataValue);
+        }
+
+        if (responseData['id'] != null) {
+          return LeadModel.fromJson(responseData);
+        }
       }
+
+      return getLeadDetail(leadId);
+    } catch (error) {
+      _logError('UPDATE LEAD STATUS', error);
+      rethrow;
     }
-
-    return getLeadDetail(leadId);
   }
 
   // ============================================================
-  // TOGGLE STAR - PATCH
+  // TOGGLE LEAD STAR
   // ============================================================
 
   Future<LeadModel> toggleLeadStar({
     required String leadId,
   }) async {
-    final response = await _apiClient.patch(
-      ApiEndpoints.toggleLeadStar(
-        AppConstants.businessId,
-        leadId,
-      ),
+    final endpoint = ApiEndpoints.toggleLeadStar(
+      AppConstants.businessId,
+      leadId,
     );
 
-    final responseData = response.data;
+    _logRequest('TOGGLE LEAD STAR', endpoint);
 
-    if (responseData is Map<String, dynamic>) {
-      final dataValue = responseData['data'];
+    try {
+      final response = await _apiClient.patch(endpoint);
 
-      if (dataValue is Map<String, dynamic>) {
-        return LeadModel.fromJson(
-          dataValue,
-        );
+      if (kDebugMode) {
+        debugPrint('TOGGLE STAR RESPONSE: ${response.data}');
       }
 
-      if (responseData['id'] != null) {
-        return LeadModel.fromJson(
-          responseData,
-        );
+      final responseData = response.data;
+
+      if (responseData is Map<String, dynamic>) {
+        final dataValue = responseData['data'];
+
+        if (dataValue is Map<String, dynamic>) {
+          return LeadModel.fromJson(dataValue);
+        }
+
+        if (responseData['id'] != null) {
+          return LeadModel.fromJson(responseData);
+        }
       }
+
+      return getLeadDetail(leadId);
+    } catch (error) {
+      _logError('TOGGLE LEAD STAR', error);
+      rethrow;
     }
-
-    return getLeadDetail(leadId);
   }
 
   // ============================================================
@@ -526,11 +546,23 @@ class LeadsRepository {
   Future<void> deleteLead({
     required String leadId,
   }) async {
-    await _apiClient.delete(
-      ApiEndpoints.deleteLead(
-        AppConstants.businessId,
-        leadId,
-      ),
+    final endpoint = ApiEndpoints.deleteLead(
+      AppConstants.businessId,
+      leadId,
     );
+
+    _logRequest('DELETE LEAD', endpoint);
+
+    try {
+      final response = await _apiClient.delete(endpoint);
+
+      if (kDebugMode) {
+        debugPrint('DELETE LEAD STATUS: ${response.statusCode}');
+        debugPrint('DELETE LEAD RESPONSE: ${response.data}');
+      }
+    } catch (error) {
+      _logError('DELETE LEAD', error);
+      rethrow;
+    }
   }
 }

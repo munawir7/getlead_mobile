@@ -1,5 +1,4 @@
-
-import 'package:flutter/foundation.dart';
+import 'package:dio/dio.dart';
 
 import '../../api/api_client.dart';
 import '../../api/endpoints.dart';
@@ -15,7 +14,8 @@ class AuthRepository {
   final ApiClient _apiClient;
   final TokenStorage _tokenStorage;
 
-  Future<void> login({
+  // Login and return the user's profile information.
+  Future<Map<String, dynamic>> login({
     required String identifier,
     required String password,
     required String deviceName,
@@ -29,54 +29,54 @@ class AuthRepository {
       },
     );
 
-    // Print the login response for development/debugging.
-    // The access token is intentionally hidden.
-    if (kDebugMode) {
-      final responseData = response.data;
+    final responseData = response.data;
 
-      if (responseData is Map<String, dynamic>) {
-        final data = responseData['data'];
-
-        if (data is Map<String, dynamic>) {
-          final safeData = Map<String, dynamic>.from(data);
-
-          if (safeData.containsKey('token')) {
-            safeData['token'] = 'REDACTED';
-          }
-
-          debugPrint('LOGIN RESPONSE: $safeData');
-        } else {
-          debugPrint('LOGIN RESPONSE: $responseData');
-        }
-      } else {
-        debugPrint('LOGIN RESPONSE: $responseData');
-      }
+    if (responseData is! Map) {
+      throw Exception('Invalid login response.');
     }
 
-    final data = response.data['data'] as Map<String, dynamic>;
-    final token = data['token'] as String?;
+    final rawData = responseData['data'];
+
+    if (rawData is! Map) {
+      throw Exception('Login data was not returned by the server.');
+    }
+
+    final data = Map<String, dynamic>.from(rawData);
+
+    final token = data['token']?.toString();
 
     if (token == null || token.isEmpty) {
       throw Exception('Access token was not returned by the server.');
     }
 
+    // Save the access token.
     await _tokenStorage.saveAccessToken(token);
+
+    // Extract the user information.
+    final rawUser = data['user'];
+
+    if (rawUser is Map) {
+      return Map<String, dynamic>.from(rawUser);
+    }
+
+    return <String, dynamic>{};
   }
 
+  // Logout and clear local authentication tokens.
   Future<void> logout() async {
     try {
       await _apiClient.post(ApiEndpoints.logout);
-    } catch (_) {
-      // Ignore network errors so tokens are always cleared even if offline
+    } on DioException {
+      // Clear local tokens even if the server is unavailable.
     } finally {
       await _tokenStorage.clearTokens();
     }
   }
 
+  // Check whether an access token exists.
   Future<bool> isLoggedIn() async {
     final token = await _tokenStorage.getAccessToken();
 
     return token != null && token.isNotEmpty;
   }
 }
-

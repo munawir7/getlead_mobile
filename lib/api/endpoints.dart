@@ -1,118 +1,79 @@
 class ApiEndpoints {
   ApiEndpoints._();
 
-  // ============================================================
-  // AUTH
-  // ============================================================
+  // ==================== AUTH ====================
 
-  static const String login =
-      '/api/mobile/login';
+  static const String login = '/api/mobile/login';
 
-  static const String refresh =
-      '/api/mobile/refresh';
+  static const String refresh = '/api/mobile/refresh';
 
-  static const String logout =
-      '/api/mobile/logout';
+  static const String logout = '/api/mobile/logout';
 
-  // ============================================================
-  // LEADS
-  // ============================================================
+  // ==================== LEADS ====================
 
-  static String leads(
-    String businessId,
-  ) {
-    return '/api/mobile/businesses/'
-        '$businessId/leads';
-  }
+  // Get all leads
+  static String leads(String businessId) =>
+      '/api/mobile/businesses/$businessId/leads';
 
-  static String leadMeta(
-    String businessId,
-  ) {
-    return '/api/mobile/businesses/'
-        '$businessId/leads/meta';
-  }
+  // Get lead metadata
+  static String leadMeta(String businessId) =>
+      '/api/mobile/businesses/$businessId/leads/meta';
 
-  static String leadDetail(
-  String businessId,
-  String leadId,
-) {
-  return '/api/mobile/businesses/$businessId/leads/$leadId';
-}
-  // ============================================================
-  // PUT - FULL EDIT
-  // ============================================================
+  // Get a single lead
+  static String leadDetail(String businessId, String leadId) =>
+      '/api/mobile/businesses/$businessId/leads/$leadId';
 
-  static String updateLead(
-    String businessId,
-    String leadId,
-  ) {
-    return '/api/mobile/businesses/'
-        '$businessId/leads/$leadId';
-  }
+  // Create a lead
+  static String createLead(String businessId) =>
+      '/api/mobile/businesses/$businessId/leads';
 
-  // ============================================================
-  // PATCH - PARTIAL UPDATE
-  // ============================================================
+  // Update a lead
+  static String updateLead(String businessId, String leadId) =>
+      '/api/mobile/businesses/$businessId/leads/$leadId';
 
-  static String patchLead(
-    String businessId,
-    String leadId,
-  ) {
-    return '/api/mobile/businesses/'
-        '$businessId/leads/$leadId';
-  }
+  // Partially update a lead
+  static String patchLead(String businessId, String leadId) =>
+      '/api/mobile/businesses/$businessId/leads/$leadId';
 
-  // ============================================================
-  // PATCH - STATUS
-  // ============================================================
+  // Update lead status
+  static String updateLeadStatus(String businessId, String leadId) =>
+      '/api/mobile/businesses/$businessId/leads/$leadId';
 
-  static String updateLeadStatus(
-    String businessId,
-    String leadId,
-  ) {
-    return '/api/mobile/businesses/'
-        '$businessId/leads/$leadId/status';
-  }
+  // Toggle lead star
+  static String toggleLeadStar(String businessId, String leadId) =>
+      '/api/mobile/businesses/$businessId/leads/$leadId/toggle-star';
 
-  // ============================================================
-  // PATCH - STAR
-  // ============================================================
+  // Delete a lead
+  static String deleteLead(String businessId, String leadId) =>
+      '/api/mobile/businesses/$businessId/leads/$leadId';
 
-  static String toggleLeadStar(
-    String businessId,
-    String leadId,
-  ) {
-    return '/api/mobile/businesses/'
-        '$businessId/leads/$leadId/toggle-star';
-  }
+  // ==================== DEALS ====================
 
-  // ============================================================
-  // DELETE
-  // ============================================================
+  // Get all deals
+  static String deals(String businessId) =>
+      '/api/mobile/businesses/$businessId/deals';
 
-  static String deleteLead(
-    String businessId,
-    String leadId,
-  ) {
-    return '/api/mobile/businesses/'
-        '$businessId/leads/$leadId';
-  }
+  // Get deal metadata
+  static String dealMeta(String businessId) =>
+      '/api/mobile/businesses/$businessId/deals/meta';
 
-  // ============================================================
-  // VALIDATION
-  // ============================================================
+  // Get a single deal
+  static String dealDetail(String businessId, String dealId) =>
+      '/api/mobile/businesses/$businessId/deals/$dealId';
 
-  static String validatePhone(
-    String businessId,
-  ) {
-    return '/api/mobile/businesses/'
-        '$businessId/leads/validate-phone';
-  }
+  // Create a deal
+  static String createDeal(String businessId) =>
+      '/api/mobile/businesses/$businessId/deals';
 
-  static String validateEmail(
-    String businessId,
-  ) {
-    return '/api/mobile/businesses/'
-        '$businessId/leads/validate-email';
-  }
+  // Update a deal
+  static String updateDeal(String businessId, String dealId) =>
+      '/api/mobile/businesses/$businessId/deals/$dealId';
+
+  // Partially update a deal
+  static String patchDeal(String businessId, String dealId) =>
+      '/api/mobile/businesses/$businessId/deals/$dealId';
+           
+  // Delete a deal
+  static String deleteDeal(String businessId, String dealId) =>
+      '/api/mobile/businesses/$businessId/deals/$dealId';
 }
