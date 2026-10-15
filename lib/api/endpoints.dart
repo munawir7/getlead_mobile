@@ -76,4 +76,81 @@ class ApiEndpoints {
   // Delete a deal
   static String deleteDeal(String businessId, String dealId) =>
       '/api/mobile/businesses/$businessId/deals/$dealId';
+        // ==================== TASKS ====================
+
+  // Get all tasks
+  static String tasks(String businessId) =>
+      '/api/mobile/businesses/$businessId/tasks';
+
+  // Get task metadata
+  static String taskMeta(String businessId) =>
+      '/api/mobile/businesses/$businessId/tasks/meta';
+
+  // Get task priorities
+  static String taskPriorities(String businessId) =>
+      '/api/mobile/businesses/$businessId/tasks/priorities';
+
+  // Get task categories
+  static String taskCategories(String businessId) =>
+      '/api/mobile/businesses/$businessId/tasks/categories';
+
+  // Get task overview
+  static String taskOverview(String businessId) =>
+      '/api/mobile/businesses/$businessId/tasks/overview';
+
+  // Get task counts by category
+  static String taskCountsByCategory(String businessId) =>
+      '/api/mobile/businesses/$businessId/tasks/counts/by-category';
+
+  // Get general tasks
+  static String generalTasks(String businessId) =>
+      '/api/mobile/businesses/$businessId/tasks/general-tasks';
+
+  // Get general task statistics
+  static String generalTaskStats(String businessId) =>
+      '/api/mobile/businesses/$businessId/tasks/general-tasks/stats';
+
+  // Get call tasks
+  static String callTasks(String businessId) =>
+      '/api/mobile/businesses/$businessId/tasks/call-tasks';
+
+  // Get call task statistics
+  static String callTaskStats(String businessId) =>
+      '/api/mobile/businesses/$businessId/tasks/call-tasks/stats';
+
+  // Get deal tasks
+  static String dealTasks(String businessId) =>
+      '/api/mobile/businesses/$businessId/tasks/deal-tasks';
+
+  // Get deal task statistics
+  static String dealTaskStats(String businessId) =>
+      '/api/mobile/businesses/$businessId/tasks/deal-tasks/stats';
+
+  // Get one task
+  static String taskDetail(String businessId, String taskId) =>
+      '/api/mobile/businesses/$businessId/tasks/$taskId';
+
+  // Create task
+  static String createTask(String businessId) =>
+      '/api/mobile/businesses/$businessId/tasks';
+
+  // Delete task
+  static String deleteTask(String businessId, String taskId) =>
+      '/api/mobile/businesses/$businessId/tasks/$taskId';
+
+  // Complete task
+  static String completeTask(String businessId, String taskId) =>
+      '/api/mobile/businesses/$businessId/tasks/$taskId/complete';
+
+  // Reschedule task
+  static String rescheduleTask(String businessId, String taskId) =>
+      '/api/mobile/businesses/$businessId/tasks/$taskId/reschedule';
+
+  // Cancel task
+  static String cancelTask(String businessId, String taskId) =>
+      '/api/mobile/businesses/$businessId/tasks/$taskId/cancel';
+      
+  static String completeCallTask(String businessId, String taskId) {
+  return '/api/mobile/businesses/$businessId/tasks/$taskId/complete-call';
+}
 }
