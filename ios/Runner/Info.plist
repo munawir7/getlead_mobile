@@ -45,5 +45,11 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Microphone access is required to record voice notes.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Camera access is required to capture photos for notes.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Photo library access is required to attach images to notes.</string>
 </dict>
 </plist>
